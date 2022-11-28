@@ -12,15 +12,16 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const HTTP_LISTENNING_ADDR = "0.0.0.0:8080"
+
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 	http.Handle("/", r)
 
 	srv := &http.Server{
-		Handler: r,
-		Addr:    "0.0.0.0:8080",
-		// Good practice: enforce timeouts for servers you create!
+		Handler:      r,
+		Addr:         HTTP_LISTENNING_ADDR,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}

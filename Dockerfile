@@ -15,8 +15,8 @@ FROM build as dev
 EXPOSE 8080/tcp
 ENTRYPOINT ["/home/bess/bess-go"]
 
-# FROM alpine:latest as production
-# WORKDIR /
-# COPY --from=build /home/bess/bess-go /
-# EXPOSE 8080/tcp
-# ENTRYPOINT ["/bess-go"]
+FROM alpine:latest as production
+WORKDIR /
+COPY --from=build /home/bess/bess-go /
+EXPOSE 8080/tcp
+ENTRYPOINT ["/bess-go"]

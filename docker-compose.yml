@@ -27,7 +27,6 @@ services:
       target: ${TARGET:-dev}
     container_name: bess-go
     environment:
-      - BESS_VAULT_ROOT_TOKEN=bess-vault-dev-root-token
       - BESS_VAULT_SERVICE_TOKEN=bess-vault-dev-root-token
       - BESS_VAULT_HOST=dev-vault
       - BESS_VAULT_PORT=8200
@@ -35,9 +34,32 @@ services:
       - "8080:8080"
     links:
       - db
+      - vault-dev
     depends_on:
       db:
         condition: service_healthy
+      vault-dev:
+        condition: service_healthy
+    networks:
+      - bess
+
+  vault-dev:
+    image: vault:1.12.1
+    container_name: vault-dev
+    environment:
+      - VAULT_ADDR="http://0.0.0.0:8200"
+      - VAULT_ROOT_TOKEN=${VAULT_ROOT_TOKEN}
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    links:
+      - db
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--proxy", "off", "http://localhost:8200/v1/sys/health?standbyok=true"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bess
 

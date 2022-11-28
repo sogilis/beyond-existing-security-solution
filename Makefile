@@ -6,6 +6,9 @@ check-def:
 ifndef PG_ADMIN_PWD
 	$(error you have to set PG_ADMIN_PWD as env var)
 endif
+ifndef VAULT_ROOT_TOKEN
+	$(error you have to set VAULT_ROOT_TOKEN as env var)
+endif
 
 create-bess-net:
 	docker network create bess || true
