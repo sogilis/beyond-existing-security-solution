@@ -10,14 +10,34 @@ services:
     volumes:
       - pg-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${PG_ADMIN_USER}
+      - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=${PG_ADMIN_PWD}
       - POSTGRES_DB=bess
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PG_ADMIN_USER} -d ${PG_ADMIN_PWD}"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d ${PG_ADMIN_PWD}"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - bess
+
+  bess-go:
+    build:
+      context: .
+      target: ${TARGET:-dev}
+    container_name: bess-go
+    environment:
+      - BESS_VAULT_ROOT_TOKEN=bess-vault-dev-root-token
+      - BESS_VAULT_SERVICE_TOKEN=bess-vault-dev-root-token
+      - BESS_VAULT_HOST=dev-vault
+      - BESS_VAULT_PORT=8200
+    ports:
+      - "8080:8080"
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - bess
 
