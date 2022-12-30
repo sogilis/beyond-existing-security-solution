@@ -28,9 +28,3 @@ run: check-def
 down:
 	docker-compose down && docker ps
 	# docker-compose down && docker volume rm $(shell docker volume ls | grep postgres-data | awk '{print $2}') && docker ps
-
-# run-dev-vault: create-bess-net
-# 	docker rm -f dev-vault
-# 	docker run -d --network wiismile -p 8200:8200 -e 'VAULT_DEV_ROOT_TOKEN_ID=bess-vault-dev-root-token' -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' --name dev-vault vault
-# 	sleep 2
-# 	(cd vault/root/cmd && go build && chmod +x cmd && BESS_VAULT_ROOT_TOKEN=bess-vault-dev-root-token BESS_VAULT_PORT=8200 ./cmd)

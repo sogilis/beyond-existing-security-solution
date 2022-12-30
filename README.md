@@ -1,4 +1,9 @@
-# beyond-existing-security-solution
+# Beyond Existing Security Solution (BESS) workshop
+
+## Prerequisites
+* Docker (if you can fetch the images before the D day it's cool)
+* Vault client (see the [hashiCorp Vault dowload page](https://developer.hashicorp.com/vault/downloads))
+* Code/Text editor of your choice
 
 ## Manage you env :
 
@@ -15,11 +20,11 @@ export VAULT_ADDR=http://localhost:8200/
 make run
 ```
 
-test vault available from your CLI:
+It's time to test your vault CLIent now:
 
 ```
 curl http://localhost:8200/v1/sys/health
-VAULT_ADDR=http://localhost:8200/ vault status
+vault status
 ```
 
 Test bess-go available
