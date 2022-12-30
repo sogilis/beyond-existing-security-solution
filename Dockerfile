@@ -1,7 +1,9 @@
 FROM golang:1.19 AS base
 RUN groupadd -r bess && useradd --no-log-init -r -g bess bess
-USER bess
+USER root
 WORKDIR /home/bess
+RUN chown bess:bess /home/bess
+USER bess
 
 FROM base as local
 ADD ./go.mod ./go.sum ./
@@ -9,6 +11,7 @@ RUN go mod download
 
 FROM local as build
 COPY --chown=bess:bess . /home/bess
+RUN mkdir -p /home/bess/.cache
 RUN CGO_ENABLED=0 GOOS=linux go build -o /home/bess/bess-go
 
 FROM build as dev
