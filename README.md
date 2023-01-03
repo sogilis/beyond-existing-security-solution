@@ -77,10 +77,42 @@ vault secrets enable database
 ```
 
 ```
-vault write database/config/postgresql \
+vault write database/config/bess-pg \
      plugin_name=postgresql-database-plugin \
-     connection_url="postgresql://{{username}}:{{password}}@$POSTGRES_URL/bess?sslmode=disable" \
+     connection_url="postgresql://{{username}}:{{password}}@db/bess?sslmode=disable" \
      allowed_roles=readonly \
      username="admin" \
      password="${PG_ADMIN_PWD}"
+```
+
+```
+tee readonly.sql <<EOF
+CREATE ROLE "{{name}}" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' INHERIT;
+GRANT ro TO "{{name}}";
+EOF
+```
+
+```
+vault write database/roles/readonly \
+      db_name=bess-pg \
+      creation_statements=@readonly.sql \
+      default_ttl=1h \
+      max_ttl=24h
+```
+
+```
+vault policy write bess-go-policy ./policies/bess-go.hcl
+```
+
+```
+VAULT_TOKEN=<Admin_Token> vault token create -field token -policy=bess-go-policy
+```
+
+### Get credential manually
+```
+export VAULT_TOKEN=hvs.CAESIFKFrOvHMFKBd-l88_JX7RZgQXvZ0RfUkVlcxrtkB8srGh4KHGh2cy5zOERNcnM0bmhsakdzNWdlcWpPUlRNaDg
+```
+
+```
+vault read database/creds/readonly
 ```
