@@ -1,3 +1,7 @@
+# Go binary
+./go/bess
+
+#
 # Binaries for programs and plugins
 *.exe
 *.exe~
