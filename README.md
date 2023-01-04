@@ -116,3 +116,7 @@ export VAULT_TOKEN=hvs.CAESIFKFrOvHMFKBd-l88_JX7RZgQXvZ0RfUkVlcxrtkB8srGh4KHGh2c
 ```
 vault read database/creds/readonly
 ```
+
+```
+vault token create -field token -policy=bess-go-policy
+```
