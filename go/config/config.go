@@ -8,7 +8,7 @@ func Load() {
 	viper.AutomaticEnv()
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("HTTP_LISTENNING_ADDR", "0.0.0.0:8080")
-	viper.SetDefault("BESS_VAULT_ADDR", "localhost")
+	viper.SetDefault("BESS_VAULT_ADDR", "http://localhost:8200/")
 	viper.SetDefault("BESS_VAULT_TOKEN_PATH", "./tokens/bess")
 }
 
