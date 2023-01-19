@@ -128,14 +128,13 @@ vault token create -field token -policy=bess-go-policy
 :warning: Save the returned token, you'll need it later.
 
 ### Get credential manually
+Set service token
 ```
 export VAULT_TOKEN=hvs.CAESIFKFrOvHMFKBd-l88_JX7RZgQXvZ0RfUkVlcxrtkB8srGh4KHGh2cy5zOERNcnM0bmhsakdzNWdlcWpPUlRNaDg
 ```
 
-```
-vault read database/creds/readonly
-```
+Read credentials
 
 ```
-vault token create -field token -policy=bess-go-policy
+vault read database/creds/readonly
 ```
