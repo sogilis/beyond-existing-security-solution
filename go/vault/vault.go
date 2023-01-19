@@ -12,7 +12,7 @@ type VaultClient struct {
 	c *vault_api.Client
 }
 
-func NewVaultClient() (*VaultClient, error) {
+func NewVaultClient(tk string) (*VaultClient, error) {
 	cfg := vault_api.DefaultConfig()
 	cfg.Address = config.GetVaultAddr()
 
@@ -21,7 +21,7 @@ func NewVaultClient() (*VaultClient, error) {
 		return nil, err
 	}
 
-	client.SetToken(config.GetVaultToken())
+	client.SetToken(tk)
 
 	return &VaultClient{c: client}, nil
 }
