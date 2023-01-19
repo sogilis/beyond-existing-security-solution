@@ -8,15 +8,14 @@
 ## Manage you env :
 
 ```
-PG_ADMIN_PWD="correcthorsestapplebattery" VAULT_ROOT_TOKEN="qt5%Fm2wk@Eg3zGUP9bH*2^%B#zuKP" make run
+PG_APP_DB='bess' PG_ADMIN_PWD='correcthorsestapplebattery' VAULT_ROOT_TOKEN='qt5%Fm2wk@Eg3zGUP9bH*2^%B#zuKP' make run
 ```
 
 or
 
 ```
-export PG_ADMIN_PWD="correcthorsestapplebattery"
-export VAULT_TOKEN="qt5%Fm2wk@Eg3zGUP9bH*2^%B#zuKP"
-export VAULT_ADDR=http://localhost:8200/
+cp .env.sample .env
+set -a; source .env; set +a
 make run
 ```
 
