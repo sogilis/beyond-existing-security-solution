@@ -6,11 +6,11 @@ RUN chown bess:bess /home/bess
 USER bess
 
 FROM base as local
-ADD ./go.mod ./go.sum ./
+ADD ./go/go.mod ./go/go.sum ./
 RUN go mod download
 
 FROM local as build
-COPY --chown=bess:bess . /home/bess
+COPY --chown=bess:bess ./go /home/bess
 RUN mkdir -p /home/bess/.cache
 RUN CGO_ENABLED=0 GOOS=linux go build -o /home/bess/bess-go
 
