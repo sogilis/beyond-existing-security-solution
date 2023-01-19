@@ -12,9 +12,9 @@ services:
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=${PG_ADMIN_PWD}
-      - POSTGRES_DB=bess
+      - POSTGRES_DB=${PG_APP_DB}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d ${PG_ADMIN_PWD}"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d ${PG_APP_DB}"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -48,9 +48,16 @@ services:
   vault-dev:
     image: vault:1.12.1
     container_name: vault-dev
+    volumes:
+      - vault-data:/vault
+      - ./policies:/vault-policies:ro
+      - ./ssl:/ssl:rw
     environment:
-      - VAULT_ADDR="http://0.0.0.0:8200"
-      - VAULT_ROOT_TOKEN=${VAULT_ROOT_TOKEN}
+      - VAULT_ADDR=http://127.0.0.1:8200/
+      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_ROOT_TOKEN}
+      - VAULT_API_ADDR=http://vault-dev:8200/
+      - VAULT_TOKEN=${VAULT_ROOT_TOKEN}
+      - 'VAULT_LOCAL_CONFIG={"storage": {"file": {"path": "/vault"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h", "ui": true}'
     cap_add:
       - IPC_LOCK
     ports:
@@ -68,7 +75,7 @@ services:
 volumes:
   pg-data:
   data:
+  vault-data:
 
 networks:
   bess:
-    external: true
