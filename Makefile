@@ -35,14 +35,16 @@ cleanup:
 	docker volume rm beyond-existing-security-solution_data beyond-existing-security-solution_pg-data beyond-existing-security-solution_vault-data
 	rm -rf ssl/*/*
 
+init-pki: create-root-ca create-sub-ca prepare-issuers
+
 create-root-ca:
 # Create a token attached to a specific policy to ensure scope limitated access for handling the pki engine
 	docker-compose exec vault-dev sh -c "vault policy write ca-admin /vault-policies/ca-admin.hcl"
-	docker-compose exec -T vault-dev sh -c "vault token create -field token -policy='ca-admin'" > ./ssl/hash/ca-admin-token.hash
+	docker-compose exec -T vault-dev sh -c "vault token create -field token -policy='ca-admin'" > ./ssl/keys/ca-admin-token.key
 # Enabling the pki engine and settings important fields for the new root ca cert (using our new token)
 	docker-compose exec vault-dev sh -c "vault secrets enable pki"
 	docker-compose exec vault-dev sh -c "vault secrets tune -max-lease-ttl=87600h pki"
-	docker-compose exec vault-dev sh -c "vault write pki/root/generate/internal common_name='local' issuer_name='rootca' ttl=87600h "
+	docker-compose exec -T vault-dev sh -c "vault write -format=json pki/root/generate/internal common_name='local' issuer_name='rootca' ttl=87600h format=pem_bundle" | jq -r '.data.certificate' > ./ssl/certs/ca.pem
 	docker-compose exec vault-dev sh -c "vault write pki/config/urls issuing_certificates='http://127.0.0.1:8200/v1/pki/ca' crl_distribution_points='http://127.0.0.1:8200/v1/pki/crl'"
 
 create-sub-ca:
@@ -55,36 +57,17 @@ create-sub-ca:
 	docker-compose exec -T vault-dev sh -c "vault write -format=json pki/root/sign-intermediate issuer_ref='rootca' csr=@/ssl/csr/sub-ca.csr format=pem_bundle ttl='43800h' " | jq -r '.data.certificate' > ./ssl/certs/sub-ca.pem
 # # Importing the intermediate CA back
 	docker-compose exec vault-dev sh -c "vault write pki_int/intermediate/set-signed certificate=@/ssl/certs/sub-ca.pem"
+	docker-compose exec vault-dev sh -c "vault write pki_int/config/urls issuing_certificates='http://127.0.0.1:8200/v1/pki_int/ca' crl_distribution_points='http://127.0.0.1:8200/v1/pki_int/crl'"
 
-create-issuers-tokens:
-	docker-compose exec -T vault-dev sh -c "vault write pki_int/roles/example-dot-local issuer_ref="$(vault read -field=default pki_int/config/issuers)" allowed_domains="*.example.local" allow_subdomains=true allow_glob_domains="true" max_ttl="720h""
+prepare-issuers:
+# Creating a role and a policy for generating token allowed to issue certificates with CN as domsub.exemple.local
+	docker-compose exec -T vault-dev sh -c 'vault write pki_int/roles/example-dot-local issuer_ref=$(vault read -field=default pki_int/config/issuers) allowed_domains="*.example.local" allow_subdomains=true allow_glob_domains=true max_ttl="720h"'
 	docker-compose exec -T vault-dev sh -c "vault policy write issuer /vault-policies/issuer.hcl"
-
-	docker-compose exec -T vault-dev sh -c "vault write pki_int/issue/example-dot-local common_name='test-1.example.com' ttl='24h'"
-
-
-	# docker-compose exec -T vault-dev sh -c "vault write auth/token/roles/issuers explicit_max_ttl='60m' ttl='30m' period='30m' renewable=true orphan=true allowed_policies='pki_int/'
-	# docker-compose exec -T vault-dev sh -c "vault token create -role example-dot-local -policy
-
-	# docker-compose exec vault-dev sh -c "vault write pki/roles/cert \
-	#  allow_any_name=true allow_bare_domains=true \
-	#  allow_subdomains=true allow_glob_domains=true \
-	#  allow_localhost=true allow_ip_sans=true \
-	#  ou="${COMPONENT}" organization="${DOMAIN}" \
-	#  ttl="${CERT_TTL}" max_ttl="${CERT_MAX_TTL}"
-
-gen-bess-cert:
-# Creating a role for issuing new certificates from the intermediate CA
-	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/hash/intca-admin-token.hash` vault-dev sh -c "vault write pki_intermediate/roles/dot-local \
-	 issuer_ref="$(vault read -field=default pki_intermediate/config/issuers)" \
-	 allowed_domains='local' \
-	 allow_subdomains=true \
-	 max_ttl='720h'"
-# Creating a token for our client
-	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/hash/intca-admin-token.hash` vault-dev sh -c "vault token create -field token -policy='intca-admin-token' " > ./ssl/hash/client-token.hash
-# Creating a new certificate for our client
-	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/hash/client-token.hash` vault-dev sh -c "vault write pki_intermediate/issue/dot-local \
-	 common_name='client.local' ttl='1h'"
+	docker-compose exec vault-dev sh -c "vault write pki_int/roles/example-dot-local allow_any_name=true allow_bare_domains=true allow_subdomains=true allow_glob_domains=true allow_localhost=true allow_ip_sans=true"
+# Create a token associated with the issuer role
+	docker-compose exec -T vault-dev sh -c "vault token create -field token -policy='issuer'" > ./ssl/keys/issuer-token.key
+# Issue a certificate using our newly created token (for testing access)
+	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/keys/issuer-token.key` vault-dev sh -c "vault write pki_int/issue/example-dot-local common_name='test-1.example.com' ttl='24h'"
 
 vault-status:
 	docker-compose exec vault-dev sh -c "vault status"

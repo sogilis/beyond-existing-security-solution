@@ -19,3 +19,6 @@
 # vendor/
 
 .env
+ssl/*/*.pem
+ssl/*/*.csr
+ssl/*/*.key
