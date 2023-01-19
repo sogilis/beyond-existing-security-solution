@@ -22,3 +22,4 @@
 ssl/*/*.pem
 ssl/*/*.csr
 ssl/*/*.key
+vault.d/tls-listener.hcl

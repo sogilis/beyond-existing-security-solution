@@ -34,8 +34,9 @@ cleanup:
 	docker rm -f -v vault-dev pg-database bess-go
 	docker volume rm beyond-existing-security-solution_data beyond-existing-security-solution_pg-data beyond-existing-security-solution_vault-data
 	rm -rf ssl/*/*
+	rm -rf vault.d/tls-listener.hcl
 
-init-pki: create-root-ca create-sub-ca prepare-issuers
+init-pki: create-root-ca create-sub-ca prepare-issuers vault-ssl-activation
 
 create-root-ca:
 # Create a token attached to a specific policy to ensure scope limitated access for handling the pki engine
@@ -67,7 +68,17 @@ prepare-issuers:
 # Create a token associated with the issuer role
 	docker-compose exec -T vault-dev sh -c "vault token create -field token -policy='issuer'" > ./ssl/keys/issuer-token.key
 # Issue a certificate using our newly created token (for testing access)
-	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/keys/issuer-token.key` vault-dev sh -c "vault write pki_int/issue/example-dot-local common_name='test-1.example.com' ttl='24h'"
+#	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/keys/issuer-token.key` vault-dev sh -c "vault write pki_int/issue/example-dot-local common_name='test-1.example.com' ttl='24h'"
+
+vault-ssl-activation:
+	docker-compose exec -T -e VAULT_TOKEN=`cat ssl/keys/issuer-token.key` vault-dev sh -c "vault write -format=json pki_int/issue/example-dot-local common_name='vault-dev' format=pem_bundle ttl='21900h'" > ./ssl/certs/vault-dev.json
+	cat ./ssl/certs/vault-dev.json | jq -r '.data.private_key' > ./ssl/keys/vault-dev.key
+	# cat ./ssl/certs/vault-dev.json | jq -r '.data.ca_chain[0]' > ./ssl/certs/vault-dev.pem
+	# cat ./ssl/certs/vault-dev.json | jq -r '.data.ca_chain[1]' >> ./ssl/certs/vault-dev.pem
+	cat ./ssl/certs/vault-dev.json | jq -r '.data.certificate' >> ./ssl/certs/vault-dev.pem
+	rm -rf ./ssl/certs/vault-dev.json
+	echo 'listener "tcp" { address = "127.0.0.1:8300" tls_cert_file = "/ssl/certs/vault-dev.pem" tls_key_file = "/ssl/keys/vault-dev.key" tls_ca_file = "/ssl/certs/ca.pem"}' > vault.d/tls-listener.hcl
+	docker-compose exec vault-dev sh -c "killall -1 vault"
 
 vault-status:
 	docker-compose exec vault-dev sh -c "vault status"

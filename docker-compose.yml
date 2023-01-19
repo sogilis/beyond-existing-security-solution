@@ -52,17 +52,18 @@ services:
       - vault-data:/vault
       - ./policies:/vault-policies:ro
       - ./ssl:/ssl:rw
+      - ./vault.d:/vault/config:rw
     environment:
       - VAULT_ADDR=http://127.0.0.1:8200/
       - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_ROOT_TOKEN}
       - VAULT_API_ADDR=http://vault-dev:8200/
       - VAULT_TOKEN=${VAULT_ROOT_TOKEN}
       - VAULT_LOG_LEVEL=${VAULT_LOG_LEVEL}
-      - 'VAULT_LOCAL_CONFIG={"storage": {"file": {"path": "/vault"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h", "ui": true}'
     cap_add:
       - IPC_LOCK
     ports:
       - "8200:8200"
+      - "8300:8300"
     links:
       - db
     healthcheck:

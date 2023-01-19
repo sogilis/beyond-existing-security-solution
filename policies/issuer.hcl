@@ -3,7 +3,7 @@ path "pki_int/issue/example-dot-local" {
     policy = "write"
 }
 
-path "pki_int/" {
+path "pki_int/*" {
     capabilities = ["read"]
 }
 
