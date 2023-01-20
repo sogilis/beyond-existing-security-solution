@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bess/config"
+	"bess/db"
 	"bess/vault"
 
 	"github.com/gorilla/mux"
@@ -79,7 +80,7 @@ func (s *HTTPServer) requestVaultCredsHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	_, err = vc.GetDBCredentials()
+	user, pass, err := vc.GetDBCredentials()
 	if err != nil {
 		msg := fmt.Sprintf("Unable to retrieve credentials on Vault: %v", err)
 		log.Printf("%v\n", msg)
@@ -88,7 +89,18 @@ func (s *HTTPServer) requestVaultCredsHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	fmt.Fprintf(w, "credentials sucessfully received")
+	conn := db.NewDBConnection(user, pass)
+
+	res, err := conn.ConnectAndQuery()
+	if err != nil {
+		msg := fmt.Sprintf("Unable to connect to database: %v", err)
+		log.Printf("%v\n", msg)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, msg)
+		return
+	}
+
+	fmt.Fprintf(w, "Query result: %v\n", res)
 	w.WriteHeader(http.StatusOK)
 }
 
