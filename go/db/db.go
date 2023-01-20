@@ -33,7 +33,7 @@ func (dbc *DBConnection) ConnectAndQuery() (string, error) {
 	defer conn.Close(context.Background())
 
 	var result string
-	err = conn.QueryRow(context.Background(), "SELECT usename FROM pg_user;").Scan(&result)
+	err = conn.QueryRow(context.Background(), "SELECT usename, usesysid, passwd, valuntil FROM pg_user;").Scan(&result)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		return "", err
@@ -45,4 +45,8 @@ func (dbc *DBConnection) ConnectAndQuery() (string, error) {
 
 func generatePGURL(user, pass string) string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", user, pass, config.GetDBHost(), PG_DEFAULT_PORT, DEFAULT_DB_NAME)
+}
+
+func parseRows() (string, error) {
+	return "", nil
 }

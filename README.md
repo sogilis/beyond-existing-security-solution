@@ -1,9 +1,10 @@
 # Beyond Existing Security Solution (BESS) workshop
 
 ## Prerequisites
-* Docker (if you can fetch the images before the D day it's cool)
+* Docker and `docker-compose` (or `docker compose`) (if you can fetch the images before the D day it's cool)
 * Vault client (see the [hashiCorp Vault dowload page](https://developer.hashicorp.com/vault/downloads))
 * Code/Text editor of your choice
+* Some classic CLI tools: `jq`, `make` and `openssl`
 
 ## Manage you env :
 
