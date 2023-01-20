@@ -19,6 +19,22 @@ set -a; source .env; set +a
 make run
 ```
 
+## Go service API
+Test API with root URL:
+```
+curl http://localhost:8080/
+```
+
+Request Credentials
+```
+curl http://localhost:8080/creds
+```
+
+### Reload bess-go (if you modify it)
+```
+docker-compose up
+```
+
 ## Interract with vault, via the vault client
 It's time to test your vault CLIent now:
 
@@ -27,36 +43,35 @@ curl http://localhost:8200/v1/sys/health
 vault status
 ```
 
-### Create the admin user of this workshop
-Note: you could use the vault root token to perform administration tasks, but .... Never tdo that !!! It's a really bad habit. Instead of this define an administrator policy that fits the exact rights you need to administrate your vault service and use the root token in the only purpose of setting this new credentials set.
+## Create the admin user of this workshop
+Note: you could use the vault root token to perform administration tasks, but .... Never do that !!! It's a really bad habit. Instead of this define an administrator policy that fits the exact rights you need to administrate your vault service and use the root token in the only purpose of setting this new credentials set.
 
-let do this, using the admin policy defined in within the [./policies/bess-admin.hcl](./policies/bess-admin.hcl) file:
-
-Create the policy within vault
+Retrieve root token form logs (only available in dev mode):
 ```
-VAULT_TOKEN=<Root_Token> vault policy write bess-admin-policy ./policies/bess-admin.hcl
+docker logs vault-dev
+```
+
+export root token as vault client token:
+```
+export VAULT_TOKEN=e6fcd968-8858-11ed-823b-23b05637c622
+```
+
+let use the admin policy defined within the [./policies/bess-admin.hcl](./policies/bess-admin.hcl) file:
+
+Create the policy within vault (use root token)
+```
+vault policy write bess-admin-policy ./policies/bess-admin.hcl
 ```
 
 Generate a token with this policy :
 
 ```
-VAULT_TOKEN=<Root_Token> vault token create -field token -policy=bess-admin-policy
+vault token create -field token -policy=bess-admin-policy
 ```
 
 Use this credentials for administrative tasks (such as setting secret engines)
 ```
 export VAULT_TOKEN=<bess-admin-token>
-```
-## Interract with go service:
-Test bess-go available
-
-```
-curl http://localhost:8080/
-```
-
-### Reload bess-go (if you modify it)
-```
-docker-compose up
 ```
 
 ### Setup Database usecase
@@ -71,6 +86,7 @@ Give that role super power !
 docker exec -i pg-database psql postgresql://admin:${PG_ADMIN_PWD}@localhost:5432/bess -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"ro\";"
 ```
 
+#### Configure vault database secret engine
 ```
 vault secrets enable database
 ```
@@ -83,6 +99,8 @@ vault write database/config/bess-pg \
      username="admin" \
      password="${PG_ADMIN_PWD}"
 ```
+
+#### Create a token for readonly role
 
 ```
 tee readonly.sql <<EOF
@@ -104,18 +122,19 @@ vault policy write bess-go-policy ./policies/bess-go.hcl
 ```
 
 ```
-VAULT_TOKEN=<Admin_Token> vault token create -field token -policy=bess-go-policy
+vault token create -field token -policy=bess-go-policy
 ```
 
+:warning: Save the returned token, you'll need it later.
+
 ### Get credential manually
+Set service token
 ```
 export VAULT_TOKEN=hvs.CAESIFKFrOvHMFKBd-l88_JX7RZgQXvZ0RfUkVlcxrtkB8srGh4KHGh2cy5zOERNcnM0bmhsakdzNWdlcWpPUlRNaDg
 ```
 
-```
-vault read database/creds/readonly
-```
+Read credentials
 
 ```
-vault token create -field token -policy=bess-go-policy
+vault read database/creds/readonly
 ```

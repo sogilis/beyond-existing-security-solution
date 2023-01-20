@@ -26,9 +26,12 @@ services:
       context: .
       target: ${TARGET:-dev}
     container_name: bess-go
+    volumes:
+      - bess-go-data:/home/bess
+      - ./go/vault/tokens:/home/bess/tokens:ro
     environment:
-      - BESS_VAULT_SERVICE_TOKEN=${BESS_VAULT_SERVICE_TOKEN}
-      - BESS_VAULT_HOST=vault-dev
+      - BESS_VAULT_TOKEN=/home/bess/tokens/bess
+      - BESS_VAULT_ADDR=http://vault-dev:8200/
       - BESS_VAULT_PORT=8200
       - DB_HOST=db
       - DB_PORT=5432
@@ -76,6 +79,7 @@ volumes:
   pg-data:
   data:
   vault-data:
+  bess-go-data:
 
 networks:
   bess:

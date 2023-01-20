@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"bess/config"
@@ -17,10 +19,9 @@ type HTTPServer struct {
 	r  *mux.Router
 }
 
-func NewHTTPServer(vc *vault.VaultClient) *HTTPServer {
+func NewHTTPServer() *HTTPServer {
 	hs := HTTPServer{
-		vc: vc,
-		r:  mux.NewRouter(),
+		r: mux.NewRouter(),
 	}
 
 	hs.r.HandleFunc("/", hs.homeHandler)
@@ -58,9 +59,30 @@ func (s *HTTPServer) queryDBHandler(w http.ResponseWriter, r *http.Request) {
 func (s *HTTPServer) requestVaultCredsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Receive command to request vault creds\n")
 
-	_, err := s.vc.GetDBCredentials()
+	tk, err := getVaulToken()
+	if err != nil {
+		msg := fmt.Sprintf("Unable to load vault token: %v", err)
+		log.Printf("%v\n", msg)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, msg)
+		return
+	}
+
+	log.Printf("tk = %v\n", tk)
+
+	vc, err := vault.NewVaultClient(tk)
+	if err != nil {
+		msg := fmt.Sprintf("Unable to connect to vault: %v", err)
+		log.Printf("%v\n", msg)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, msg)
+		return
+	}
+
+	_, err = vc.GetDBCredentials()
 	if err != nil {
 		msg := fmt.Sprintf("Unable to retrieve credentials on Vault: %v", err)
+		log.Printf("%v\n", msg)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, msg)
 		return
@@ -68,4 +90,18 @@ func (s *HTTPServer) requestVaultCredsHandler(w http.ResponseWriter, r *http.Req
 
 	fmt.Fprintf(w, "credentials sucessfully received")
 	w.WriteHeader(http.StatusOK)
+}
+
+// getVaulToken load token from file
+// see BESS_VAULT_TOKEN_PATH config var
+func getVaulToken() (string, error) {
+	dat, err := os.ReadFile(config.GetVaultTokenPath())
+
+	if err != nil {
+		return "", err
+	}
+
+	s := string(dat)
+	token := strings.TrimSuffix(s, "\n")
+	return token, nil
 }
