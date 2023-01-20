@@ -2,6 +2,7 @@ package vault
 
 import (
 	"fmt"
+	"log"
 
 	"bess/config"
 
@@ -26,12 +27,21 @@ func NewVaultClient(tk string) (*VaultClient, error) {
 	return &VaultClient{c: client}, nil
 }
 
-func (vc *VaultClient) GetDBCredentials() (string, error) {
+// GetDBCredentials returns vault credentials from
+// 'database/creds/readonly' PATH.
+// Return = user, password, error
+func (vc *VaultClient) GetDBCredentials() (string, string, error) {
 	secret, err := vc.c.Logical().Read("database/creds/readonly")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+	u := fmt.Sprintf("%s", secret.Data["username"])
+	p := fmt.Sprintf("%s", secret.Data["password"])
+	//NOTE: this prints are done for pedagical purpose
+	// if you do this in production code, it is highly
+	// probable that someone burns you at any point.
+	log.Printf("DB user = %v\n", u)
+	log.Printf("DB pwd = %v\n", p)
 
-	fmt.Printf("Vault DB credentials = %v", secret)
-	return "", nil
+	return u, p, nil
 }
