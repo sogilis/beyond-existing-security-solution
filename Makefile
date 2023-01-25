@@ -10,13 +10,15 @@ ifndef VAULT_ROOT_TOKEN
 	$(error you have to set VAULT_ROOT_TOKEN as env var)
 endif
 
-
+# This target is creating a new Docker network named 'bess' by running the 'docker network create' command. If the network already exists, the command will return an error, but the '|| true' at the end of the command will make sure that the Makefile continues to run without stopping.
 create-bess-net:
 	docker network create bess || true
 
+# This command will build the images for all the services defined in the compose file, but it will not start the containers.
 build:
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose -f docker-compose.yml build
 
+# This target is starting the container for the database service by running the 'docker-compose up -d' command with the 'db' service specified. It also sets the environment variables 'COMPOSE_DOCKER_CLI_BUILD' and 'DOCKER_BUILDKIT' to '1' and specifies the compose file to use with the '-f' option. Before running this target, it is checking if the environment variables 'PG_ADMIN_PWD' and 'VAULT_ROOT_TOKEN' are defined using the 'check-def' target
 run-db: check-def
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose -f docker-compose.yml up -d db
 
@@ -25,18 +27,25 @@ run: check-def
 	COMPOSE_DOCKER_CLI_BUILD=1 \
 	DOCKER_BUILDKIT=1 \
 	docker-compose up -d --build bess-go && docker ps
+	docker ps
 
+# This target is stopping and removing all the containers and networks defined in the compose file by running the 'docker-compose down' command. It will also remove the volumes associated with those containers, but it will not remove the images.
 down:
 	docker-compose down && docker ps
-	# docker-compose down && docker volume rm $(shell docker volume ls | grep postgres-data | awk '{print $2}') && docker ps
 
+# This target can be useful when you need to clean up resources that were created during testing or development and start fresh.
 cleanup:
-	docker rm -f -v vault-dev pg-database bess-go
-	docker volume rm beyond-existing-security-solution_data beyond-existing-security-solution_pg-data beyond-existing-security-solution_vault-data
-	rm -rf ssl/*/*
+	docker stop vault-dev pg-database bess-go; \
+	docker rm -f -v vault-dev pg-database bess-go; \
+	docker volume rm beyond-existing-security-solution_data beyond-existing-security-solution_pg-data beyond-existing-security-solution_vault-data; \
+	rm -rf ssl/*/* ; \
 	rm -rf vault.d/tls-listener.hcl
 
-init-pki: create-root-ca create-sub-ca prepare-issuers vault-ssl-activation
+init-pki: start-vault create-root-ca create-sub-ca prepare-issuers vault-status
+
+start-vault:
+	docker-compose up -d vault-dev
+	sleep 60
 
 create-root-ca:
 # Create a token attached to a specific policy to ensure scope limitated access for handling the pki engine
@@ -76,10 +85,8 @@ vault-ssl-activation:
 	# cat ./ssl/certs/vault-dev.json | jq -r '.data.ca_chain[0]' > ./ssl/certs/vault-dev.pem
 	# cat ./ssl/certs/vault-dev.json | jq -r '.data.ca_chain[1]' >> ./ssl/certs/vault-dev.pem
 	cat ./ssl/certs/vault-dev.json | jq -r '.data.certificate' >> ./ssl/certs/vault-dev.pem
-	rm -rf ./ssl/certs/vault-dev.json
-	echo 'listener "tcp" { address = "127.0.0.1:8300" tls_cert_file = "/ssl/certs/vault-dev.pem" tls_key_file = "/ssl/keys/vault-dev.key" tls_ca_file = "/ssl/certs/ca.pem"}' > vault.d/tls-listener.hcl
-	docker-compose exec vault-dev sh -c "killall -1 vault"
 
 vault-status:
 	docker-compose exec vault-dev sh -c "vault status"
-
+	docker-compose exec vault-dev sh -c "vault policy list"
+	for policy in `docker-compose exec -T vault-dev sh -c "vault policy list"`;do  docker-compose exec vault-dev sh -c "vault policy read ${policy}" ; done
