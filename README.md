@@ -6,17 +6,18 @@
 * Code/Text editor of your choice
 * Some classic CLI tools: `jq`, `make` and `openssl`
 
-## Manage you env :
-
-```
-PG_APP_DB='bess' PG_ADMIN_PWD='correcthorsestapplebattery' VAULT_ROOT_TOKEN='qt5%Fm2wk@Eg3zGUP9bH*2^%B#zuKP' make run
-```
-
-or
-
+## Manage your env :
 ```
 cp .env.sample .env
 set -a; source .env; set +a
+make run
+```
+or
+
+```
+export PG_APP_DB='bess'
+export PG_ADMIN_PWD='correcthorsestapplebattery'
+export VAULT_ROOT_TOKEN='qt5%Fm2wk@Eg3zGUP9bH*2^%B#zuKP'
 make run
 ```
 
@@ -39,8 +40,14 @@ docker-compose up
 ## Interract with vault, via the vault client
 It's time to test your vault CLIent now:
 
+via Curl:
 ```
 curl http://localhost:8200/v1/sys/health
+```
+
+or via the vault CLI tool:
+```
+export VAULT_ADDR=http://localhost:8200/
 vault status
 ```
 
@@ -78,13 +85,13 @@ export VAULT_TOKEN=<bess-admin-token>
 ### Setup Database usecase
 #### Create Postgres role for vault
 ```
-docker exec -i pg-database psql postgresql://admin:${PG_ADMIN_PWD}@localhost:5432/bess -c "CREATE ROLE \"ro\" NOINHERIT;"
+docker exec -i pg-database sh -c 'psql postgresql://admin:${PG_ADMIN_PWD}@localhost:5432/bess -c "CREATE ROLE \"ro\" NOINHERIT;"'
 ```
 
 Give that role super power !
 
 ```
-docker exec -i pg-database psql postgresql://admin:${PG_ADMIN_PWD}@localhost:5432/bess -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"ro\";"
+docker exec -i pg-database sh -c 'psql postgresql://admin:${PG_ADMIN_PWD}@localhost:5432/bess -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO \"ro\";"'
 ```
 
 #### Configure vault database secret engine

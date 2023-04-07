@@ -32,13 +32,17 @@ func (dbc *DBConnection) ConnectAndQuery() (string, error) {
 	}
 	defer conn.Close(context.Background())
 
-	var result string
-	err = conn.QueryRow(context.Background(), "SELECT usename, usesysid, passwd, valuntil FROM pg_user;").Scan(&result)
+	var username string
+	var usesysid string
+	var passwd string
+	var valuntil string
+	err = conn.QueryRow(context.Background(), "SELECT usename, usesysid, passwd, valuntil FROM pg_user;").Scan(&username, &usesysid, &passwd, &valuntil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		return "", err
 	}
 
+	result := fmt.Sprintf("username: %v, usersysid: %v, passwd: %v, valuntil: %v", username, usesysid, passwd, valuntil)
 	fmt.Printf("here's the databse query result: %v \n", result)
 	return result, nil
 }
