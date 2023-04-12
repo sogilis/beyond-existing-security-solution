@@ -101,7 +101,6 @@ func (s *HTTPServer) requestVaultCredsHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	fmt.Fprintf(w, "Query result: %v\n", res)
-	w.WriteHeader(http.StatusOK)
 }
 
 // getVaulToken load token from file
