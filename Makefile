@@ -89,4 +89,4 @@ vault-ssl-activation:
 vault-status:
 	docker-compose exec vault-dev sh -c "vault status"
 	docker-compose exec vault-dev sh -c "vault policy list"
-	for policy in `docker-compose exec -T vault-dev sh -c "vault policy list"`;do  docker-compose exec vault-dev sh -c "vault policy read ${policy}" ; done
+	# for policy in `docker-compose exec -T vault-dev sh -c "vault policy list"`;do  docker-compose exec vault-dev sh -c "vault policy read ${policy}" ; done
